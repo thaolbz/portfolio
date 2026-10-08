@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  PORTFOLIO TERMINAL - Matheus Silva
+  ============================================================================
+
+  Um portfolio interativo com cara de terminal Linux.
+
+  Como funciona:
+  - Toda a "mágica" acontece dentro da div #term
+  - A área #term-output é onde os comandos aparecem
+  - O input #term-input é invisível, mas captura o que você digita
+  - Os arquivos JS carregam no final (depois do HTML carregar)
+
+  Estrutura visual:
+  ┌─────────────────────────┐
+  │  ● ● ●   título da janela │  ← barra superior (term-bar)
+  ├─────────────────────────┤
+  │                         │
+  │   aqui aparece tudo     │  ← área de saída (term-output)
+  │   que os comandos       │     (faz scroll automático)
+  │   mostram               │
+  │                         │
+  ├─────────────────────────┤
+  │ matheus@cecon:~$ ▊       │  ← linha de input (prompt + cursor)
+  ├─────────────────────────┤
+  │  ↑↓ histórico  Tab...   │  ← barra de dicas (hint-bar)
+  └─────────────────────────┘
+-->
+<html lang="pt-BR">
+<head>
+  <!-- Metadados básicos da página -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Matheus Silva — Estudante de Técnico em Informática para Internet. Portfolio interativo com estética de terminal." />
+
+  <!-- Título que aparece na aba do navegador -->
+  <title>matheus@cecon: ~</title>
+
+  <!-- Ícone da aba (favicon) - desenhado direto em SVG, sem arquivo externo -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0a'/%3E%3Ctext x='7' y='22' font-family='monospace' font-size='15' fill='%233be35c'%3E~%24%3C/text%3E%3C/svg%3E" />
+
+  <!-- Folha de estilos (cores, fontes, efeitos visuais) -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <!--
+    Camadas de fundo fixas:
+    - .bg-layer: imagem de fundo + escurecimento (fica parada quando scrolla)
+    - .crt-overlay: efeito de TV antiga (linhas de scan + bordas escuras)
+    Essas divs ficam atrás de tudo (z-index negativo) e não atrapalham cliques.
+  -->
+  <div class="bg-layer" aria-hidden="true"></div>
+  <div class="crt-overlay" aria-hidden="true"></div>
+
+  <!--
+    ==========================================================================
+    JANELA DO TERMINAL
+    ==========================================================================
+    Essa é a "caixa" principal. Tem 4 partes:
+    1. Barra de título (com os 3 botões coloridos)
+    2. Área de saída (onde aparece o conteúdo)
+    3. Linha de input (onde você digita)
+    4. Barra de dicas (lembrete dos atalhos de teclado)
+  -->
+  <div class="term" id="term">
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         1. BARRA SUPERIOR (simula a barra de título de uma janela)
+         ────────────────────────────────────────────────────────────────────── -->
+    <div class="term-bar" aria-hidden="true">
+      <!-- Os 3 círculos que parecem botões de fechar/minimizar/maximizar -->
+      <span class="dots"><i></i><i></i><i></i></span>
+      <!-- Texto que mostra o tamanho da janela (atualiza sozinho) -->
+      <span class="term-title" id="term-title">matheus@cecon — bash — 80×24</span>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         2. ÁREA DE SAÍDA (onde os comandos aparecem)
+         ────────────────────────────────────────────────────────────────────── -->
+    <!--
+      Essa div é a "tela" do terminal. Ela tem scroll próprio (não usa o da página).
+      Quando um comando é executado, o JavaScript coloca o resultado aqui.
+      O atributo aria-live="polite" ajuda leitores de tela a anunciarem mudanças.
+    -->
+    <div class="term-scroll" id="term-output" aria-live="polite"></div>
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         3. LINHA DE INPUT (onde o usuário digita os comandos)
+         ────────────────────────────────────────────────────────────────────── -->
+    <div class="t-line t-input-line" id="term-input-line">
+      <!-- O "prompt" - aquele texto verde que fica antes do cursor -->
+      <span class="t-prompt">matheus@cecon:~$</span>
+
+      <!-- Aqui aparece o que o usuário está digitando (espelho do input) -->
+      <span id="term-text"></span>
+
+      <!-- Cursor piscante (parece um bloco de texto piscando) -->
+      <span class="cursor" aria-hidden="true">▊</span>
+
+      <!--
+        Input real (invisível):
+        - Fica posicionado por cima da linha de input
+        - Tem opacity: 0 no CSS (fica invisível)
+        - Captura o que o usuário digita no teclado
+        - O texto digitado aparece no span #term-text acima
+      -->
+      <input id="term-input" type="text" autocomplete="off" autocapitalize="off"
+             spellcheck="false" aria-label="Digite um comando" />
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         4. BARRA DE DICAS (ajuda para quem não conhece atalhos de terminal)
+         ────────────────────────────────────────────────────────────────────── -->
+    <div class="hint-bar" aria-hidden="true">
+      <span><kbd>↑</kbd><kbd>↓</kbd> histórico</span>
+      <span><kbd>Tab</kbd> autocompletar</span>
+      <span><kbd>Enter</kbd> executar</span>
+      <span>ou clique nos comandos exibidos</span>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────────────────
+         PLAYER DE MÚSICA (fica escondido, só o áudio toca)
+         ────────────────────────────────────────────────────────────────────── -->
+    <audio id="audio" src="assets/firefly.mp3" preload="metadata"></audio>
+  </div>
+
+  <!--
+    ==========================================================================
+    SCRIPTS (carregam por último para a página já estar pronta)
+    ==========================================================================
+    Ordem importa:
+    1. conteudo.js - Carrega os textos (precisa estar antes do main.js)
+    2. main.js - A lógica do terminal (usa os textos do conteudo.js)
+  -->
+  <script src="js/conteudo.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

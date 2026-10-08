@@ -1,0 +1,523 @@
+/**
+ * =============================================================================
+ * STYLE.CSS - Folha de estilos do Portfolio Terminal
+ * =============================================================================
+ *
+ * Organización do arquivo:
+ * 1. Fontes (carrega a fonte do terminal)
+ * 2. Variáveis (cores e fontes usadas em todo lugar)
+ * 3. Base (estilos globais do body)
+ * 4. Camadas de fundo (imagem + efeito CRT)
+ * 5. Janela do terminal (a "caixa" principal)
+ * 6. Barra superior (título e botões)
+ * 7. Área de saída (onde o texto aparece)
+ * 8. Estilos de texto (títulos, parágrafos, cores)
+ * 9. Tabelas (habilidades, competências, trajetória)
+ * 10. Botões clicáveis (comandos)
+ * 11. Linha de input (prompt + cursor)
+ * 12. Música (barra de progresso do player)
+ * 13. Barra de dicas (atalhos de teclado)
+ * 14. Responsivo (celular e tablet)
+ * 15. Acessibilidade (usuários que preferem menos animação)
+ * =============================================================================
+ */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   1. FONTES
+   Carrega a fonte "Terminus" - é a mesma usada em terminais Linux reais.
+   Se não carregar, usa fontes monoespaçadas do sistema.
+   ──────────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Terminus";
+  font-style: normal;
+  font-weight: 400;
+  src: url("fonts/terminus-400.woff") format("woff");
+  /* font-display: swap faz o texto aparecer imediatamente com fonte padrão,
+     e troca pela Terminus quando carregar (evita texto invisível) */
+  font-display: swap;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   2. VARIÁVEIS (cores e fontes)
+   Centraliza todas as cores aqui. Para mudar o tema, só editar esses valores.
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Cores principais do tema "fósforo verde" */
+  --bg:        #04070a;   /* fundo da página (quase preto azulado) */
+  --text:      #3be35c;   /* cor do texto normal (verde) */
+  --accent:    #8dffab;   /* cor de destaque (verde claro) */
+  --dim:       #1e7a34;   /* cor de texto secundário (verde escuro, menos visível) */
+  --green:     #3bff64;   /* verde brilhante (usado em destaques especiais) */
+
+  /* Bordas */
+  --border:    #1c4a29;   /* borda normal */
+  --border-hi: #2f8747;   /* borda quando passa o mouse */
+
+  /* Fonte padrão - tenta a Terminus primeiro, depois fontes do sistema */
+  --font: "Terminus", "JetBrains Mono", ui-monospace, "Cascadia Code",
+          Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   3. BASE (estilos globais)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Reset básico: todos os elementos usam border-box (padding não aumenta tamanho) */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Corpo da página */
+body {
+  margin: 0;                          /* tira margem padrão do navegador */
+  min-height: 100dvh;                  /* ocupa pelo menos a altura da tela */
+  font-family: var(--font);           /* usa a fonte do terminal */
+  font-size: 15px;                    /* tamanho base do texto */
+  line-height: 1.6;                   /* espaçamento entre linhas (1.6x o tamanho) */
+  color: var(--text);                 /* cor do texto */
+  background-color: var(--bg);        /* cor de fundo (a imagem fica na .bg-layer) */
+  -webkit-font-smoothing: antialiased; /* deixa a fonte mais suave no Mac */
+  text-rendering: optimizeLegibility; /* melhora a renderização do texto */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   4. CAMADAS DE FUNDO
+   Duas divs fixas que ficam atrás de tudo:
+   - .bg-layer: imagem de fundo com escurecimento
+   - .crt-overlay: efeito de TV antiga (scanlines + vinheta)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Imagem de fundo fixa (não rola com a página) */
+.bg-layer {
+  position: fixed;        /* fixa na tela, não se move com scroll */
+  inset: 0;               /* ocupa a tela toda (top:0, right:0, bottom:0, left:0) */
+  z-index: -1;            /* fica atrás de tudo */
+  background-image:
+    linear-gradient(rgba(3, 8, 4, .82), rgba(3, 8, 4, .9)),  /* escurece a imagem */
+    url("../assets/wallpaper.jpg");                           /* a imagem em si */
+  background-size: cover;     /* cobre a tela toda, cortando se necessário */
+  background-position: center;/* centraliza a imagem */
+  background-repeat: no-repeat; /* não repete a imagem */
+}
+
+/* Efeito CRT (TV antiga): linhas horizontais + bordas escuras */
+.crt-overlay {
+  position: fixed;        /* fixa na tela */
+  inset: 0;               /* tela toda */
+  pointer-events: none;   /* deixa clicar "através" dessa camada */
+  z-index: 999;           /* fica na frente de tudo (menos que o texto) */
+
+  /* Linhas de scan: listras horizontais escuras a cada 3 pixels */
+  background: repeating-linear-gradient(
+    0deg,                           /* direção: de cima para baixo */
+    rgba(0, 0, 0, .12) 0px,        /* linha escura (1px) */
+    rgba(0, 0, 0, .12) 1px,
+    transparent 1px,                /* espaço transparente (2px) */
+    transparent 3px
+  );
+
+  /* Vinheta: escurece as bordas da tela (efeito de TV antiga) */
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, .4);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   5. JANELA DO TERMINAL (a "caixa" principal)
+   ──────────────────────────────────────────────────────────────────────────── */
+.term {
+  position: relative;                 /* referência para elementos internos */
+  min-height: calc(100dvh - 28px);    /* quase a altura toda da tela (deixa margem) */
+  max-width: 1080px;                  /* largura máxima em telas grandes */
+  margin: 14px auto;                  /* centraliza horizontalmente, margem em cima/baixo */
+  display: flex;                      /* organiza as partes em coluna */
+  flex-direction: column;
+
+  /* Fundo sólido escuro (quase opaco para o texto ficar legível) */
+  background: rgba(4, 12, 6, .95);
+
+  /* Borda arredondada estilo macOS */
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  /* Sombra para dar profundidade (parece que está "flutuando") */
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.4),              /* borda extra sutil */
+    0 20px 60px rgba(0, 0, 0, .6),         /* sombra grande e escura */
+    0 0 80px rgba(59, 227, 92, .05);       /* brilho verde bem sutil */
+
+  cursor: text;  /* mostra cursor de texto quando passa o mouse (parece clicável) */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   6. BARRA SUPERIOR (título da janela + botões)
+   ──────────────────────────────────────────────────────────────────────────── */
+.term-bar {
+  display: flex;              /* organiza em linha */
+  align-items: center;        /* centraliza verticalmente */
+  gap: 12px;                  /* espaço entre os elementos */
+  padding: 12px 16px;         /* espaço interno */
+  border-bottom: 1px solid var(--border);  /* linha separando da área de saída */
+  flex-shrink: 0;             /* não encolhe quando a tela é pequena */
+  background: rgba(0, 0, 0, .2);           /* fundo levemente mais escuro */
+}
+
+/* Os 3 círculos (parecem botões de fechar/minimizar/maximizar) */
+.dots {
+  display: flex;
+  gap: 8px;  /* espaço entre os círculos */
+}
+.dots i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;         /* faz virar círculo */
+  background: transparent;    /* começa transparente */
+  border: 1px solid var(--border-hi);
+  transition: background .2s, border-color .2s;  /* animação suave ao passar mouse */
+}
+
+/* Quando passa o mouse na janela, os círculos ficam coloridos */
+.term:hover .dots i:nth-child(1) { background: #ff5f56; border-color: #ff5f56; } /* vermelho (fechar) */
+.term:hover .dots i:nth-child(2) { background: #ffbd2e; border-color: #ffbd2e; } /* amarelo (minimizar) */
+.term:hover .dots i:nth-child(3) { background: #27c93f; border-color: #27c93f; } /* verde (maximizar) */
+
+/* Texto do título da janela */
+.term-title {
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: .02em;
+  margin-left: 8px;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   7. ÁREA DE SAÍDA (onde o conteúdo aparece, com scroll)
+   ──────────────────────────────────────────────────────────────────────────── */
+.term-scroll {
+  flex: 1;                    /* ocupa todo o espaço disponível */
+  padding: 20px 24px 12px;    /* espaço interno (mais em cima, menos embaixo) */
+  overflow-y: auto;           /* scroll vertical quando o conteúdo é grande */
+  overflow-x: hidden;         /* esconde scroll horizontal (não precisa) */
+  min-height: 0;              /* permite encolher dentro do flex */
+  -webkit-overflow-scrolling: touch;  /* scroll suave no iPhone */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   8. ESTILOS DE TEXTO
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Linha de comando digitado (prompt + comando) */
+.t-line {
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;      /* respeita quebras de linha e espaços */
+  overflow-wrap: break-word;  /* quebra palavras longas */
+  margin: 0 0 4px 0;          /* espacinho embaixo */
+}
+
+/* O "prompt" (matheus@cecon:~$) */
+.t-prompt {
+  color: var(--accent);       /* verde claro */
+  font-weight: 700;           /* negrito */
+}
+
+/* Saída padrão (resultado de um comando) */
+.t-out {
+  margin: 0 0 12px 0;         /* espaço embaixo */
+  font-size: 15px;
+  line-height: 1.7;           /* espaçamento confortável para leitura */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* Título grande (ex: "Bem-vindo ao meu portfolio") */
+.t-title {
+  display: block;             /* ocupa a linha toda */
+  font-size: 1.6rem;          /* tamanho grande */
+  font-weight: 700;           /* negrito */
+  color: var(--accent);       /* verde claro */
+  text-shadow: 0 0 12px rgba(141, 255, 171, .4);  /* brilho verde (efeito fósforo) */
+  margin-bottom: 4px;
+}
+
+/* Subtítulo (ex: "Estudante de técnico...") */
+.t-sub {
+  display: block;
+  color: var(--dim);          /* verde escuro (menos destaque) */
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+/* Classes de cor para usar no texto */
+.t-out.dimout { color: var(--dim); }   /* texto secundário (cinza-esverdeado) */
+.t-dim { color: var(--dim); }          /* texto apagado */
+.t-accent { color: var(--accent); }    /* destaque (verde claro) */
+.t-green { color: var(--green); }      /* verde brilhante */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   9. TABELAS (habilidades, competências, trajetória)
+   ──────────────────────────────────────────────────────────────────────────── */
+.t-table {
+  width: 100%;                /* ocupa a largura toda */
+  border-collapse: collapse;  /* bordas grudadas (sem espaço entre células) */
+  margin: 8px 0 16px 0;       /* espaço em cima e embaixo */
+  font-size: 14px;
+}
+
+/* Cabeçalho da tabela */
+.t-table th {
+  text-align: left;           /* texto alinhado à esquerda */
+  color: var(--dim);          /* cor discreta */
+  font-weight: 400;           /* sem negrito */
+  font-size: 12px;            /* menor */
+  text-transform: uppercase;  /* TUDO MAIÚSCULO */
+  letter-spacing: .05em;      /* espaçamento entre letras */
+  padding: 8px 16px 8px 0;    /* espaço interno (mais à direita para separar colunas) */
+  border-bottom: 1px solid var(--border);  /* linha embaixo do cabeçalho */
+}
+
+/* Células da tabela */
+.t-table td {
+  padding: 10px 16px 10px 0;  /* espaço interno */
+  border-bottom: 1px solid rgba(28, 74, 41, .3);  /* linha sutil entre linhas */
+  vertical-align: middle;     /* centraliza verticalmente */
+}
+
+/* Última linha não precisa de borda embaixo */
+.t-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   10. BOTÕES CLICÁVEIS (comandos no texto)
+   ──────────────────────────────────────────────────────────────────────────── */
+.cmd-btn {
+  display: inline;            /* fica na mesma linha do texto */
+  cursor: pointer;            /* mostra mãozinha ao passar mouse */
+  color: var(--accent);       /* verde claro */
+  border-bottom: 1px dashed var(--border-hi);  /* sublinhado tracejado (parece link) */
+  padding: 0 2px;             /* espacinho nas laterais */
+}
+
+/* Efeito ao passar o mouse */
+.cmd-btn:hover {
+  color: var(--green);        /* fica mais brilhante */
+  border-bottom-style: solid; /* sublinhado vira contínuo */
+  border-bottom-color: var(--green);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   11. LINHA DE INPUT (prompt + cursor)
+   ──────────────────────────────────────────────────────────────────────────── */
+.t-input-line {
+  position: relative;         /* referência para o input invisível */
+  display: flex;              /* organiza em linha */
+  gap: 8px;                   /* espaço entre prompt e texto */
+  align-items: baseline;      /* alinha pela base do texto */
+  padding: 12px 24px 16px;    /* espaço interno */
+  flex-shrink: 0;             /* não encolhe */
+  font-size: 15px;
+  border-top: 1px solid var(--border);  /* linha separando da área de saída */
+  background: rgba(0, 0, 0, .15);       /* fundo levemente mais escuro */
+}
+
+/* Texto que o usuário está digitando (espelho do input) */
+#term-text {
+  white-space: pre-wrap;      /* respeita espaços */
+  word-break: break-all;      /* quebra palavras longas */
+}
+
+/*
+  Input real (invisível):
+  - Fica posicionado por cima da linha de input
+  - É transparente (opacity: 0)
+  - Captura o teclado do usuário
+  - O texto aparece no span #term-text acima
+*/
+#term-input {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  opacity: 0;                 /* invisível */
+  width: 1px;                 /* tamanho mínimo */
+  height: 1px;
+  border: none;
+  font-size: 16px;            /* evita zoom automático no iPhone */
+  pointer-events: none;       /* não intercepta cliques (deixa o click passar) */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   12. CURSOR PISCANTE
+   ──────────────────────────────────────────────────────────────────────────── */
+.cursor {
+  display: inline-block;      /* permite animar */
+  animation: blink 1.1s steps(1) infinite;  /* pisca a cada 1.1 segundos */
+  color: var(--accent);
+}
+
+/* Animação: fica visível metade do tempo, invisível na outra metade */
+@keyframes blink {
+  50% { opacity: 0; }         /* no meio da animação, some */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   13. PLAYER DE MÚSICA (barra de progresso)
+   ──────────────────────────────────────────────────────────────────────────── */
+.mstat {
+  margin: 8px 0;
+  font-size: 14px;
+  white-space: pre-wrap;
+  padding: 8px 12px;
+  background: rgba(59, 227, 92, .05);  /* fundo verde bem transparente */
+  border: 1px solid var(--border);
+  border-radius: 4px;         /* cantos arredondados */
+}
+
+/* A parte preenchida da barra de progresso fica em verde claro */
+.mstat .bar-chars {
+  color: var(--accent);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   14. ELEMENTO DE MEDIÇÃO (invisível, usado pelo JavaScript)
+   ──────────────────────────────────────────────────────────────────────────── */
+#probe {
+  position: absolute;
+  visibility: hidden;         /* invisível */
+  white-space: pre;
+  font-size: 15px;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   15. BARRA DE DICAS (atalhos de teclado no rodapé)
+   ──────────────────────────────────────────────────────────────────────────── */
+.hint-bar {
+  display: flex;
+  flex-wrap: wrap;            /* quebra linha se não couber */
+  gap: 16px;                  /* espaço entre os itens */
+  padding: 10px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--dim);
+  background: rgba(0, 0, 0, .2);
+}
+
+.hint-bar span {
+  display: inline-flex;       /* ícone + texto alinhados */
+  align-items: center;
+  gap: 6px;
+}
+
+/* As teclas (kbd) têm estilo de "botão" */
+.hint-bar kbd {
+  background: rgba(59, 227, 92, .08);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: inherit;       /* mesma fonte do resto */
+  font-size: 11px;
+  color: var(--dim);
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   16. SEÇÃO DO PASSEIO (títulos durante a apresentação automática)
+   ──────────────────────────────────────────────────────────────────────────── */
+.t-out.secao {
+  color: var(--accent);
+  margin: 20px 0 12px 0;       /* mais espaço em cima para separar seções */
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .02em;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   17. LINKS E SELEÇÃO DE TEXTO
+   ──────────────────────────────────────────────────────────────────────────── */
+a {
+  color: var(--accent);       /* links em verde claro */
+  text-decoration: none;      /* sem sublinhado padrão */
+  border-bottom: 1px solid var(--border-hi);  /* sublinhado customizado */
+}
+
+a:hover {
+  border-color: var(--accent);  /* sublinhado fica mais claro ao passar mouse */
+}
+
+/* Parágrafos têm espaço embaixo (exceto o último) */
+p {
+  margin: 0 0 8px 0;
+}
+p:last-child {
+  margin-bottom: 0;
+}
+
+/* Cor quando seleciona texto (copiar/colar) */
+::selection {
+  background: var(--green);   /* fundo verde */
+  color: #04140a;             /* texto escuro */
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   18. MENSAGEM DE BOOT (linhas que aparecem na abertura)
+   ──────────────────────────────────────────────────────────────────────────── */
+.boot {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dim);          /* cor discreta */
+  white-space: pre;           /* respeita espaços (para alinhar o [OK]) */
+  line-height: 1.5;
+}
+
+/* O "OK" em verde brilhante */
+.boot b {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   19. RESPONSIVO (celular e tablet)
+   ──────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Texto um pouco menor em telas pequenas */
+  body {
+    font-size: 14px;
+  }
+
+  /* Terminal ocupa quase a tela toda, sem bordas arredondadas */
+  .term {
+    margin: 8px;
+    min-height: calc(100dvh - 16px);
+    max-width: none;          /* sem limite de largura */
+    border-radius: 0;
+  }
+
+  /* Menos espaço interno */
+  .term-scroll {
+    padding: 16px;
+  }
+  .t-input-line {
+    padding: 12px 16px;
+  }
+
+  /* Esconde a barra de dicas (não tem teclado físico no celular) */
+  .hint-bar {
+    display: none;
+  }
+
+  /* Tabela menor */
+  .t-table {
+    font-size: 13px;
+  }
+  .t-table th,
+  .t-table td {
+    padding: 8px 8px 8px 0;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   20. ACESSIBILIDADE (usuários que preferem menos animação)
+   Se o sistema operacional está configurado para "reduzir animações",
+   desliga o piscar do cursor.
+   ──────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cursor {
+    animation: none;          /* cursor fica parado */
+  }
+}
